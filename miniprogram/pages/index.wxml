@@ -1,0 +1,16 @@
+<!--index.wxml-->
+<view class="container">
+
+  <view class="title">百科知识大PK</view>
+
+<view>
+    <button type="primary" bindtap="onSearchRoomPress" class="search-room__button">搜索房间号</button>
+    <text class="top_tip">或从下方选择游戏创建房间</text>
+</view>
+
+
+  <view class="power" wx:key="title" wx:for="{{gameList}}" wx:for-item="game">
+        <view class="power_info_text_title" data-id="{{game.gameId}}" bindtap="onGamePress">{{game.gameName}}</view>
+  </view>
+
+</view>
