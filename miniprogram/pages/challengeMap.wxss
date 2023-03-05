@@ -1,0 +1,22 @@
+/**challengeMap.wxss**/
+
+.title {
+    font-family: PingFang SC;
+    font-weight: 500;
+    color: #000000;
+    font-size: 44rpx;
+    margin-bottom: 40rpx;
+  }
+
+  .answer__input {
+      border: 1px solid grey;
+      height: 68rpx;
+      width: 400rpx;
+      margin-bottom: 40rpx;
+  }
+
+  .user-profile__image {
+    margin-left: 20rpx;
+    width: 100rpx;
+    height: 100rpx;
+  }

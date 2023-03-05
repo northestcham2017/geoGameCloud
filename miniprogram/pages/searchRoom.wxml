@@ -1,0 +1,13 @@
+<!--searchRoom.wxml-->
+<view class="container">
+
+  <view class="title">搜索房间</view>
+
+<view>
+    <input placeholder="请输入房间号" class="search-room__input" type="number" bindinput="onRoomNumberInput"></input>
+</view>
+<view>
+    <button type="primary" bindtap="onConfirmPress">确定</button>
+</view>
+
+</view>

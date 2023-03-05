@@ -5,9 +5,13 @@ Page({
      * 页面的初始数据
      */
     data: {
+        bRoomOwner: true,
         gameName: "",
+        gameId: "",
+        gameCategory: "",
         roomNumber: "",
         players: [],
+        myIndex: 0,
         avatarUrl: ""
     },
 
@@ -33,17 +37,15 @@ Page({
         //         })
         //     }
         // });
-
-        // if (wx.getUserProfile) {
-        //     this.setData({
-        //         canIUseGetUserProfile: true
-        //     })
-        // }
+        var bRoomOwner = option.gameId ? true : false;
+        this.setData({
+            bRoomOwner: bRoomOwner
+        });
 
         const db = wx.cloud.database({
             envId: "cloud1-8g7is2ox21d31413"
         });
-        if (option.gameId) { // Create new room
+        if (bRoomOwner) { // Create new room
             this.setData({
                 gameId: option.gameId
             })
@@ -51,16 +53,15 @@ Page({
                 gameId: option.gameId
             }).get({
                 success: function (result) {
-                    // console.log(result);
                     if (result && result.data) {
                         that.setData({
-                            gameName: result.data[0].gameName
+                            gameName: result.data[0].gameName,
+                            gameCategory: result.data[0].gameCategory
                         })
                     }
                 }
             });
         } else if (option.roomNumber) { // Enter existing room
-            console.log(option.roomNumber);
             this.setData({
                 roomNumber: option.roomNumber
             });
@@ -72,7 +73,9 @@ Page({
                 success: function (result) {
                     if (result && result.data) {
                         that.setData({
-                            players: result.data[0].players
+                            players: result.data[0].players,
+                            gameName: result.data[0].gameName,
+                            gameCategory: result.data[0].gameCategory
                         })
                     }
                 },
@@ -85,96 +88,183 @@ Page({
 
     onChooseAvatar(e) {
         var that = this;
+
         if (wx.getSystemInfoSync().SDKVersion < "2.27.1") {
             // PC debugging
             wx.getUserProfile({
                 desc: '用于房间页面显示',
-                success:(res) => {
-                    this.setData({
+                success: (res) => {
+                    that.setData({
                         avatarUrl: res.userInfo.avatarUrl,
+                        myIndex: that.data.players.length,
                         players: that.data.players.concat({
-                            avatarUrl: res.userInfo.avatarUrl
+                            avatarUrl: res.userInfo.avatarUrl,
+                            answered: []
                         })
                     });
-                    this.data.gameName ? this.createRoom() : this.enterRoom();
+
+                    // wx.cloud.uploadFile({
+                    //     cloudPath: "avatar.jpg",
+                    //     filePath: res.userInfo.avatarUrl,
+                    //     success: res => {
+                    //         console.log(res);
+                    //     },
+                    //     fail: err => {
+                    //         console.log(err);
+                    //     }
+                    // });
+                    this.data.bRoomOwner ? this.createRoom() : this.enterRoom();
                 },
                 fail: (res) => {
                     console.log(res);
                 }
             });
         } else {
-            var currentPlayers = this.data.players.concat({
-                avatarUrl: e.detail.avatarUrl
-            })
-            this.setData({
-                avatarUrl: e.detail.avatarUrl,
-                players: currentPlayers
-            });
-            this.data.gameName ? this.createRoom() : this.enterRoom();
+            // Real device
+            if (e.detail.avatarUrl) {
+                wx.cloud.uploadFile({
+                    cloudPath: Math.random() + ".jpg",
+                    filePath: e.detail.avatarUrl,
+                    success: res => {
+                        // Initial user data
+                        var newUser = {
+                            avatarUrl: res.fileID,
+                            answered: []
+                        };
+
+                        var currentPlayers = that.data.players.concat(newUser);
+                        that.setData({
+                            avatarUrl: res.fileID,
+                            players: currentPlayers,
+                            myIndex: currentPlayers.length - 1
+                        });
+                        that.data.bRoomOwner ? that.createRoom() : that.enterRoom();
+                    },
+                    fail: err => {
+                        console.log(err);
+                    }
+                });
+            }
         }
-
-        // if (this.data.gameName) {
-        //     // When room lead creates room
-        //     this.createRoom();
-        // } else {
-        //     this.enterRoom();
-        // }
-
-        // this.data.gameName ? this.createRoom() : this.enterRoom();
     },
 
-    // getUserProfile(e) {
-    //     wx.getUserProfile({
-    //         desc: '用于房间页面显示',
-    //         success: (res) => {
-    //             console.log(res.userInfo);
-    //             this.setData({
-    //                 userInfo: res.userInfo,
-    //                 hasUserInfo: true,
-    //                 players: [{
-    //                     avatarUrl: res.userInfo.avatarUrl,
-    //                     nickName: res.userInfo.nickName
-    //                 }]
-    //             });
-    //             if (this.data.gameName) {
-    //                 // When room lead creates room
-    //                 this.createRoom();
-    //             } else {
-    //                 this.enterRoom();
-    //             }
-    //         }
-    //     })
-    // },
+    onStartPress() {
+        var sRoomNumber = this.data.roomNumber;
 
-    generateRoomNumber() {
-
-    },
-
-    createRoom() {
+        var that = this;
         const db = wx.cloud.database({
             envId: "cloud1-8g7is2ox21d31413"
         });
-        const roomNumber = this.generateRoomNumber();
-
-        db.collection('rooms').add({
+        db.collection('rooms').where({
+            roomNumber: this.data.roomNumber
+        })
+        .update({
             data: {
-                "roomNumber": "0002",
-                "gameName": this.data.gameName,
-                "players": [],
-                "roundTime": 30.0,
-                "status": "InPreparation",
-                "gameId": "countries",
-                // "roomLeadName": this.data.userInfo.nickName,
-                "roomLeadAvatar": this.data.avatarUrl,
-                "totalTime": 900.0,
-                "numberOfPlayers": 2.0,
-                "startTime": new Date()
+                status: "Started"
             },
+            success: function (e) {
+                console.log(e);
+                // that.setData({
+                //     players: currentPlayers
+                // });
+                // that.watchPlayersUpdate();
+            },
+            fail: function (e) {
+                console.log(e);
+            }
+        })
+    },
+
+    watchPlayersUpdate() {
+        var that = this;
+        // var bRoomOwner = this.data.bRoomOwner;
+        const db = wx.cloud.database({
+            envId: "cloud1-8g7is2ox21d31413"
+        });
+        const watcher = db.collection('rooms')
+          .where({
+            roomNumber: this.data.roomNumber
+          })
+          .watch({
+            onChange: function(snapshot) {
+                that.setData({
+                    players: snapshot.docs[0].players
+                });
+                if (snapshot.docs[0].status === "Started") {
+                    var sGameCategory = that.data.gameCategory;
+                    switch(sGameCategory) {
+                        case "map": 
+                            wx.navigateTo({
+                                url: "challengeMap?roomNumber=" + that.data.roomNumber + "&myIndex=" + that.data.myIndex
+                            });
+                            watcher.close();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            },
+            onError: function(err) {
+              console.error('the watch closed because of error', err)
+            }
+          })
+    },
+
+    generateRoomNumber(result) {
+        var i, bExisted = false;
+        var randomRoomNumber = Math.floor(Math.random() * 10000).toString()
+        for (i = 0; i < result.data.length; i++) {
+            if (randomRoomNumber === parseInt(result.data[i].roomNumber)) {
+                bExisted = true;
+                break;
+            }
+        }
+        if (!bExisted) {
+            return randomRoomNumber;
+        } else {
+            generateRoomNumber(result);
+        }
+    },
+
+    createRoom() {
+        var that = this;
+        const db = wx.cloud.database({
+            envId: "cloud1-8g7is2ox21d31413"
+        });
+
+        db.collection("rooms").get({
             success: function (result) {
                 console.log(result);
-            },
-            fail: function (result) {
-                console.log(result);
+                var newRoomNumber = that.generateRoomNumber(result);
+                db.collection('rooms').add({
+                    data: {
+                        "roomNumber": newRoomNumber.toString(),
+                        "gameName": that.data.gameName,
+                        "currentPlayerIndex": 0,
+                        "players": [{
+                            avatarUrl: that.data.avatarUrl,
+                            answered: []
+                        }],
+                        "roundTime": 30.0,
+                        "status": "InPreparation",
+                        "gameId": "countries",
+                        "gameCategory": that.data.gameCategory,
+                        // "roomLeadName": this.data.userInfo.nickName,
+                        "roomLeadAvatar": that.data.avatarUrl,
+                        "totalTime": 900.0,
+                        "numberOfPlayers": 2.0,
+                        "startTime": new Date()
+                    },
+                    success: function (result) {
+                        that.setData({
+                            roomNumber: newRoomNumber
+                        });
+                        that.watchPlayersUpdate();
+                    },
+                    fail: function (result) {
+                        console.log(result);
+                    }
+                });
             }
         });
     },
@@ -185,12 +275,7 @@ Page({
             envId: "cloud1-8g7is2ox21d31413"
         });
 
-        // var existingPlayers = this.data.players;
         var currentPlayers = this.data.players
-        // .concat({
-        //     // "nickName": this.data.userInfo.nickName,
-        //     "avatarUrl": this.data.avatarUrl
-        // })
 
         try {
             db.collection('rooms').where({
@@ -201,10 +286,10 @@ Page({
                         players: currentPlayers
                     },
                     success: function (e) {
-                        console.log(currentPlayers);
                         that.setData({
                             players: currentPlayers
                         });
+                        that.watchPlayersUpdate();
                     },
                     fail: function (e) {
                         console.log(e);
@@ -213,54 +298,5 @@ Page({
         } catch (e) {
             console.log(e);
         }
-    },
-
-    /**
-     * 生命周期函数--监听页面初次渲染完成
-     */
-    onReady() {
-
-    },
-
-    /**
-     * 生命周期函数--监听页面显示
-     */
-    onShow() {
-
-    },
-
-    /**
-     * 生命周期函数--监听页面隐藏
-     */
-    onHide() {
-
-    },
-
-    /**
-     * 生命周期函数--监听页面卸载
-     */
-    onUnload() {
-
-    },
-
-    /**
-     * 页面相关事件处理函数--监听用户下拉动作
-     */
-    onPullDownRefresh() {
-
-    },
-
-    /**
-     * 页面上拉触底事件的处理函数
-     */
-    onReachBottom() {
-
-    },
-
-    /**
-     * 用户点击右上角分享
-     */
-    onShareAppMessage() {
-
     }
 })

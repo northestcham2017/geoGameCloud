@@ -1,0 +1,16 @@
+/**searchRoom.wxss**/
+
+.title {
+    font-family: PingFang SC;
+    font-weight: 500;
+    color: #000000;
+    font-size: 44rpx;
+    margin-bottom: 40rpx;
+  }
+
+  .search-room__input {
+      border: 1px solid grey;
+      height: 68rpx;
+      width: 400rpx;
+      margin-bottom: 40rpx;
+  }

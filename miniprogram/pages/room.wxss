@@ -120,6 +120,10 @@ page {
       font-weight: bold;
   }
 
+  .start__button {
+      margin-top: 40rpx;
+  }
+
   /* .userContainer {
       display: grid;
       margin-top: 10rpx;

@@ -1,13 +1,15 @@
 {
   "pages": [
     "pages/index",
-    "pages/room"
+    "pages/room",
+    "pages/searchRoom",
+    "pages/challengeMap"
   ],
   "window": {
     "backgroundColor": "#F6F6F6",
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#F6F6F6",
-    "navigationBarTitleText": "云开发 QuickStart",
+    "navigationBarTitleText": "百科知识大PK",
     "navigationBarTextStyle": "black"
   },
   "sitemapLocation": "sitemap.json",

@@ -42,7 +42,7 @@ Page({
     //     content
     // });
     wx.navigateTo({
-        url: "room?roomNumber=" + "0002",
+        url: "searchRoom",
         success: function(res) {
         //   res.eventChannel.emit('gameId', { data: gameId });
         }
