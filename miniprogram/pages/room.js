@@ -5,14 +5,16 @@ Page({
      * 页面的初始数据
      */
     data: {
-        bRoomOwner: true,
+        bRoomOwner: null,
         gameName: "",
         gameId: "",
         gameCategory: "",
         roomNumber: "",
         players: [],
         myIndex: 0,
-        avatarUrl: ""
+        avatarUrl: "",
+        roundTimeLimitOptions: [10, 20, 30, 60],
+        roundTimeLimit: 30
     },
 
     /**
@@ -75,7 +77,8 @@ Page({
                         that.setData({
                             players: result.data[0].players,
                             gameName: result.data[0].gameName,
-                            gameCategory: result.data[0].gameCategory
+                            gameCategory: result.data[0].gameCategory,
+                            roundTimeLimit: result.data[0].roundTime
                         })
                     }
                 },
@@ -294,9 +297,35 @@ Page({
                     fail: function (e) {
                         console.log(e);
                     }
-                })
+                });
         } catch (e) {
             console.log(e);
         }
+    },
+
+    bindRoundTimeChange(e) {
+        var that = this;
+        var iIndex = e.detail.value;
+        var roundTimeLimitOptions = this.data.roundTimeLimitOptions;
+
+        const db = wx.cloud.database({
+            envId: "cloud1-8g7is2ox21d31413"
+        });
+        db.collection('rooms').where({
+                roomNumber: that.data.roomNumber
+            })
+            .update({
+                data: {
+                    roundTime: parseInt(roundTimeLimitOptions[iIndex], 10)
+                },
+                success: function (e) {
+                    that.setData({
+                        roundTimeLimit: roundTimeLimitOptions[iIndex]
+                    });
+                },
+                fail: function (e) {
+                    console.log(e);
+                }
+            });
     }
 })

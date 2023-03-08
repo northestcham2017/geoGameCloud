@@ -5,6 +5,15 @@
 
     <view class="top_tip">房间号：{{roomNumber}}</view>
     <view class="top_tip">请添加好友为玩家。（游戏参与者数量可以为1-8人）</view>
+    <view hidden="{{bRoomOwner}}" class="top_tip">时间限制：{{roundTimeLimit}}秒</view>
+    <view hidden="{{!bRoomOwner || avatarUrl === ''}}">
+        <picker bindchange="bindRoundTimeChange" value="{{roundTimeLimit}}" range="{{roundTimeLimitOptions}}">
+            <view class="picker">
+                时间限制：{{roundTimeLimit}}秒
+            </view>
+        </picker>
+    </view>
+    <view class="top_tip">整局时间：30分钟</view>
 
     <view class="user-profile__container">
         <view wx:for="{{players}}"  wx:for-item="player">

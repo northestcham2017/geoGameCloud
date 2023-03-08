@@ -1,24 +1,27 @@
 <!--challengeMap.wxml-->
 <view class="container">
-  <view class="title">{{gameName}}</view>
-<view>
-    <text>国家名称：</text>
-    <input value="{{userAnswer}}" placeholder="倒计时{{countdown}}秒" class="answer__input" bindinput="onAnswerInput"></input>
-</view>
+    <view class="title">{{gameName}}</view>
 
-<view>
-    <block wx:for="{{players}}"  wx:for-item="player" >
-        <image class="user-profile__image" src="{{player.avatarUrl}}"></image>
-        <text hidden="{{players.length > 1 ? false : true}}">{{player.answered.length}}</text>
-        <text hidden="{{players.length > 1 ? true : false}}" >{{player.answered.length}}/{{answers.length}}</text>
-    </block>
-</view>
+    <ec-canvas id="'mychart-dom-area" canvas-id="mychart-area" ec="{{ec}}"></ec-canvas>
 
-<view hidden="{{currentPlayerIndex === myIndex ? false : true}}">
-    <button type="primary" bindtap="onConfirmPress">确定</button>
-</view>
-<view>
-    <button type="warn" bindtap="onGiveupPress">放弃</button>
-</view>
+    <view>
+        <text>国家名称：</text>
+        <input value="{{userAnswer}}" placeholder="倒计时{{roundTimeLimit}}秒" class="answer__input" bindinput="onAnswerInput"></input>
+    </view>
+
+    <view>
+        <block wx:for="{{players}}" wx:for-item="player">
+            <image class="user-profile__image" src="{{player.avatarUrl}}"></image>
+            <text hidden="{{players.length > 1 ? false : true}}">{{player.answered.length}}</text>
+            <text hidden="{{players.length > 1 ? true : false}}">{{player.answered.length}}/{{answers.length}}</text>
+        </block>
+    </view>
+
+    <view hidden="{{currentPlayerIndex === myIndex ? false : true}}">
+        <button type="primary" bindtap="onConfirmPress">确定</button>
+    </view>
+    <view>
+        <button type="warn" bindtap="onGiveupPress">放弃</button>
+    </view>
 
 </view>

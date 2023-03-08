@@ -6,6 +6,8 @@ Page({
         currentPlayerIndex: 0,
         userAnswer: "",
         players: [],
+        roundTimeLimit: 30,
+        roundTimeLimitInitial: 30,
         answers: []
     },
 
@@ -15,7 +17,7 @@ Page({
             roomNumber: option.roomNumber,
             myIndex: parseInt(option.myIndex, 10)
         });
-        console.log(option.myIndex);
+        // console.log(option.myIndex);
 
         const db = wx.cloud.database({
             envId: "cloud1-8g7is2ox21d31413"
@@ -30,7 +32,9 @@ Page({
                     that.setData({
                         players: result.data[0].players,
                         gameName: result.data[0].gameName,
-                        gameId: result.data[0].gameId
+                        gameId: result.data[0].gameId,
+                        roundTimeLimit: parseInt(result.data[0].roundTime, 10),
+                        roundTimeLimitInitial: parseInt(result.data[0].roundTime, 10)
                         // gameCategory: result.data[0].gameCategory
                     });
 
@@ -43,9 +47,10 @@ Page({
                                 that.setData({
                                     answers: result.data[0].answer
                                 });
+                                that.startCountdown(that);
 
                                 // Add watcher
-                                that.watchPlayersUpdate();
+                                that.watchPlayersUpdate(that);
                             }
                         }
                     });
@@ -58,29 +63,64 @@ Page({
 
     },
 
-    watchPlayersUpdate() {
-        var that = this;
-        var sRoomNumber = this.data.roomNumber;
-        console.log("sRoomNumber:" + sRoomNumber);
+    startCountdown(that) {
+        var iRoundTimeLimit = that.data.roundTimeLimit;
+        // console.log("iRoundTimeLimit:" + iRoundTimeLimit);
+        var countdownId = setInterval(function () {
+            iRoundTimeLimit = iRoundTimeLimit - 1;
+            var bIsCurrentPlayer = that.data.currentPlayerIndex === that.data.myIndex ? true : false;
+            if (iRoundTimeLimit === 0) {
+                clearInterval(countdownId);
+                if (bIsCurrentPlayer) {
+                    wx.showToast({
+                        title: '时间到！',
+                        icon: "none"
+                    });
+                }
+                var iMyIndex = that.data.myIndex;
+                var iCurrentPlayerIndex = that.data.currentPlayerIndex;
+                var aPlayers = that.data.players;
+                var iNextPlayerIndex = (iCurrentPlayerIndex === aPlayers.length - 1) ? 0 : iCurrentPlayerIndex + 1;
+                // console.log("next player index:" + iNextPlayerIndex);
+                that.setData({
+                    currentPlayerIndex: iNextPlayerIndex
+                    // roundTimeLimit: that.data.roundTimeLimitInitial
+                });
+                that.switchPlayer(that);
+            } else {
+                that.setData({
+                    roundTimeLimit: iRoundTimeLimit
+                });
+            }
+        }, 1000);
+    },
+
+    watchPlayersUpdate(that) {
+        // var that = this;
+        var sRoomNumber = that.data.roomNumber;
+        // console.log("sRoomNumber:" + sRoomNumber);
         const db = wx.cloud.database({
             envId: "cloud1-8g7is2ox21d31413"
         });
         db.collection('rooms')
-        .where({
-          roomNumber: sRoomNumber
-        })
-        .watch({
-          onChange: function(snapshot) {
-              console.log(snapshot.docs[0]);
-              that.setData({
-                currentPlayerIndex: snapshot.docs[0].currentPlayerIndex,
-                players: snapshot.docs[0].players
-              });
-          },    
-          onError: function(err) {
-            console.error('the watch closed because of error', err)
-          }
-        });
+            .where({
+                roomNumber: sRoomNumber
+            })
+            .watch({
+                onChange: function (snapshot) {
+                    // console.log(snapshot.docs[0]);
+                    that.setData({
+                        currentPlayerIndex: snapshot.docs[0].currentPlayerIndex,
+                        players: snapshot.docs[0].players
+                        // roundTimeLimit: snapshot.docs[0].roundTime
+                    });
+                    console.log(snapshot.docs[0].currentPlayerIndex);
+                    // that.startCountdown(that);
+                },
+                onError: function (err) {
+                    console.error('the watch closed because of error', err)
+                }
+            });
     },
 
     onAnswerInput(e) {
@@ -97,9 +137,6 @@ Page({
         var aAnswers = this.data.answers;
         var aPlayers = this.data.players;
         var iCurrentPlayerIndex = this.data.currentPlayerIndex;
-        const db = wx.cloud.database({
-            envId: "cloud1-8g7is2ox21d31413"
-        });
 
         var i, bFlag = false;
         for (i = 0; i < aAnswers.length; i++) {
@@ -108,30 +145,19 @@ Page({
                     title: "回答正确！"
                 });
                 bFlag = true;
-                iCurrentPlayerIndex = (iMyIndex === aPlayers.length - 1) ? 0 : iMyIndex + 1;
-                console.log("iCurrentPlayerIndex:" + iCurrentPlayerIndex);
+                iNextPlayerIndex = (iCurrentPlayerIndex === aPlayers.length - 1) ? 0 : iCurrentPlayerIndex + 1;
+                // console.log(iNextPlayerIndex);
                 that.setData({
                     userAnswer: "",
-                    currentPlayerIndex: iCurrentPlayerIndex
+                    currentPlayerIndex: iNextPlayerIndex
                 });
 
                 // Update answered answers for current player
                 aPlayers[iMyIndex].answered.push(sAnswer);
-                this.setData({
+                that.setData({
                     players: aPlayers
                 });
-                db.collection('rooms').where({
-                        roomNumber: sRoomNumber
-                    })
-                    .update({
-                        data: {
-                            players: aPlayers,
-                            currentPlayerIndex: iCurrentPlayerIndex
-                        },
-                        success: function (e) {
-                            console.log(e);
-                        }
-                    });
+                that.switchPlayer(that);
             }
         }
         if (bFlag === false) {
@@ -139,5 +165,34 @@ Page({
                 title: "不对哦"
             });
         }
+    },
+
+    switchPlayer(that) {
+        var sRoomNumber = that.data.roomNumber;
+        var aPlayers = that.data.players;
+        var iCurrentPlayerIndex = that.data.currentPlayerIndex;
+        var iRoundTimeLimitInitial = that.data.roundTimeLimitInitial;
+        const db = wx.cloud.database({
+            envId: "cloud1-8g7is2ox21d31413"
+        });
+        db.collection('rooms').where({
+                roomNumber: sRoomNumber
+            })
+            .update({
+                data: {
+                    players: aPlayers,
+                    currentPlayerIndex: iCurrentPlayerIndex
+                },
+                success: function (e) {
+                    // console.log(e);
+                    // if (countdownId) {
+                    //     clearInterval(countdownId);
+                    // }
+                    that.setData({
+                        roundTimeLimit: iRoundTimeLimitInitial
+                    });
+                    that.startCountdown(that);
+                }
+            });
     }
 });
