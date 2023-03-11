@@ -13,6 +13,7 @@ Page({
 
     onLoad: function (option) {
         var that = this;
+        this._countdownTimeout = 0;
         this.setData({
             roomNumber: option.roomNumber,
             myIndex: parseInt(option.myIndex, 10)
@@ -47,7 +48,8 @@ Page({
                                 that.setData({
                                     answers: result.data[0].answer
                                 });
-                                that.startCountdown(that);
+                                var iRoundTimeLimit = that.data.roundTimeLimit;
+                                that.startCountdown(that, iRoundTimeLimit);
 
                                 // Add watcher
                                 that.watchPlayersUpdate(that);
@@ -63,14 +65,11 @@ Page({
 
     },
 
-    startCountdown(that) {
-        var iRoundTimeLimit = that.data.roundTimeLimit;
-        // console.log("iRoundTimeLimit:" + iRoundTimeLimit);
-        var countdownId = setInterval(function () {
-            iRoundTimeLimit = iRoundTimeLimit - 1;
+    startCountdown(that, iCountdown) {
+        that._countdownTimeout = setTimeout(function() {
+            var iRoundTimeLimit = iCountdown - 1;
             var bIsCurrentPlayer = that.data.currentPlayerIndex === that.data.myIndex ? true : false;
             if (iRoundTimeLimit === 0) {
-                clearInterval(countdownId);
                 if (bIsCurrentPlayer) {
                     wx.showToast({
                         title: '时间到！',
@@ -91,6 +90,7 @@ Page({
                 that.setData({
                     roundTimeLimit: iRoundTimeLimit
                 });
+                that.startCountdown(that, iRoundTimeLimit);
             }
         }, 1000);
     },
@@ -111,11 +111,12 @@ Page({
                     // console.log(snapshot.docs[0]);
                     that.setData({
                         currentPlayerIndex: snapshot.docs[0].currentPlayerIndex,
-                        players: snapshot.docs[0].players
-                        // roundTimeLimit: snapshot.docs[0].roundTime
+                        players: snapshot.docs[0].players,
+                        roundTimeLimit: snapshot.docs[0].roundTime
                     });
-                    console.log(snapshot.docs[0].currentPlayerIndex);
-                    // that.startCountdown(that);
+                    clearTimeout(that._countdownTimeout);
+                    that.startCountdown(that, parseInt(snapshot.docs[0].roundTime, 10));
+                    // console.log(snapshot.docs[0].currentPlayerIndex);
                 },
                 onError: function (err) {
                     console.error('the watch closed because of error', err)
@@ -145,7 +146,7 @@ Page({
                     title: "回答正确！"
                 });
                 bFlag = true;
-                iNextPlayerIndex = (iCurrentPlayerIndex === aPlayers.length - 1) ? 0 : iCurrentPlayerIndex + 1;
+                var iNextPlayerIndex = (iCurrentPlayerIndex === aPlayers.length - 1) ? 0 : iCurrentPlayerIndex + 1;
                 // console.log(iNextPlayerIndex);
                 that.setData({
                     userAnswer: "",
@@ -184,14 +185,9 @@ Page({
                     currentPlayerIndex: iCurrentPlayerIndex
                 },
                 success: function (e) {
-                    // console.log(e);
-                    // if (countdownId) {
-                    //     clearInterval(countdownId);
-                    // }
                     that.setData({
                         roundTimeLimit: iRoundTimeLimitInitial
                     });
-                    that.startCountdown(that);
                 }
             });
     }
