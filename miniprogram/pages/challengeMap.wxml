@@ -23,6 +23,14 @@
     <view hidden="{{currentPlayerIndex === myIndex ? false : true}}">
         <button type="primary" bindtap="onConfirmPress">确定</button>
     </view>
+
+    <view>
+        <text>已答：</text>
+        <block wx:for="{{players}}" wx:for-item="player">
+            <text>{{player.answered}}，</text>
+        </block>
+    </view>
+
     <view>
         <button type="warn" bindtap="onGiveupPress">放弃</button>
     </view>
