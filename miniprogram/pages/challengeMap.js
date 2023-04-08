@@ -1,3 +1,44 @@
+import * as echarts from '../ec-canvas/echarts';
+import geoJson from '../ec-canvas/world'
+
+var answersJson = [{
+    name: 'China',
+    value: 100
+},
+{
+    name: 'Japan',
+    value: 100
+}
+];
+
+function initChart(canvas, width, height, dpr) {
+    const chart = echarts.init(canvas, null, {
+        width: width,
+        height: height,
+        devicePixelRatio: dpr // new
+    });
+    canvas.setChart(chart);
+    echarts.registerMap('world', geoJson);
+    const option = {
+        visualMap: {
+          show: false,
+          min: 0,
+          max: 100,
+          left: 'left',
+          top: 'bottom',
+          calculable: true
+        },
+        series: [{
+            type: 'map',
+            silent: true,
+            mapType: 'world',
+            data: answersJson
+        }],
+    };
+    chart.setOption(option);
+    return chart;
+}
+
 Page({
     data: {
         roomNumber: "",
@@ -8,7 +49,10 @@ Page({
         players: [],
         roundTimeLimit: 30,
         roundTimeLimitInitial: 30,
-        answers: []
+        answers: [],
+        ec: {
+            onInit: initChart
+        }
     },
 
     onLoad: function (option) {
@@ -48,6 +92,15 @@ Page({
                                 that.setData({
                                     answers: result.data[0].answer
                                 });
+                                answersJson = [{
+                                    name: 'China',
+                                    value: 100
+                                },
+                                {
+                                    name: 'Australia',
+                                    value: 100
+                                }
+                                ]
                                 var iRoundTimeLimit = that.data.roundTimeLimit;
                                 that.startCountdown(that, iRoundTimeLimit);
 
@@ -62,11 +115,11 @@ Page({
                 console.log(e);
             }
         });
-
     },
 
+
     startCountdown(that, iCountdown) {
-        that._countdownTimeout = setTimeout(function() {
+        that._countdownTimeout = setTimeout(function () {
             var iRoundTimeLimit = iCountdown - 1;
             var bIsCurrentPlayer = that.data.currentPlayerIndex === that.data.myIndex ? true : false;
             if (iRoundTimeLimit === 0) {

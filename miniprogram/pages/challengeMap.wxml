@@ -2,7 +2,8 @@
 <view class="container">
     <view class="title">{{gameName}}</view>
 
-    <ec-canvas id="'mychart-dom-area" canvas-id="mychart-area" ec="{{ec}}"></ec-canvas>
+    <ec-canvas id="'mychart-dom-area" canvas-id="mychart-area" ec="{{ ec }}"></ec-canvas>
+
 
     <view hidden="{{currentPlayerIndex === myIndex ? false : true}}">
         <text>国家名称：</text>
