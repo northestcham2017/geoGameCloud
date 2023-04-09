@@ -1,15 +1,6 @@
 import * as echarts from '../ec-canvas/echarts';
 import geoJson from '../ec-canvas/world'
 
-var answersJson = [{
-    name: 'China',
-    value: 100
-},
-{
-    name: 'Japan',
-    value: 100
-}
-];
 
 function initChart(canvas, width, height, dpr) {
     const chart = echarts.init(canvas, null, {
@@ -21,18 +12,17 @@ function initChart(canvas, width, height, dpr) {
     echarts.registerMap('world', geoJson);
     const option = {
         visualMap: {
-          show: false,
-          min: 0,
-          max: 100,
-          left: 'left',
-          top: 'bottom',
-          calculable: true
+            show: false,
+            min: 0,
+            max: 100,
+            left: 'left',
+            top: 'bottom',
+            calculable: true
         },
         series: [{
             type: 'map',
             silent: true,
-            mapType: 'world',
-            data: answersJson
+            mapType: 'world'
         }],
     };
     chart.setOption(option);
@@ -92,15 +82,6 @@ Page({
                                 that.setData({
                                     answers: result.data[0].answer
                                 });
-                                answersJson = [{
-                                    name: 'China',
-                                    value: 100
-                                },
-                                {
-                                    name: 'Australia',
-                                    value: 100
-                                }
-                                ]
                                 var iRoundTimeLimit = that.data.roundTimeLimit;
                                 that.startCountdown(that, iRoundTimeLimit);
 
@@ -161,7 +142,34 @@ Page({
             })
             .watch({
                 onChange: function (snapshot) {
-                    // console.log(snapshot.docs[0]);
+                    // Update map
+                    var mapData = that.getAnsweredMapData(that);
+                    var map = that.selectComponent("#mychart-dom-area");
+                    map.init((canvas, width, height) => {
+                        const mapView = echarts.init(canvas, null, {
+                            width: width,
+                            height: height
+                        });
+                        const mapOption = {
+                            visualMap: {
+                                show: false,
+                                min: 0,
+                                max: 100,
+                                left: 'left',
+                                top: 'bottom',
+                                calculable: true
+                            },
+                            series: [{
+                                type: 'map',
+                                silent: true,
+                                mapType: 'world',
+                                data: mapData
+                            }],
+                        };
+                        mapView.setOption(mapOption);
+                        return mapView;
+                    });
+
                     that.setData({
                         currentPlayerIndex: snapshot.docs[0].currentPlayerIndex,
                         players: snapshot.docs[0].players,
@@ -175,6 +183,21 @@ Page({
                     console.error('the watch closed because of error', err)
                 }
             });
+    },
+
+    getAnsweredMapData(that) {
+        var aPlayers = that.data.players, i, answeredIndex;
+        var aMapData = [];
+        for (i = 0; i < aPlayers.length; i++) {
+            for (answeredIndex = 0; answeredIndex < aPlayers[i].answered.length; answeredIndex++) {
+                var oDataItem = {
+                    name: aPlayers[i].answered[answeredIndex],
+                    value: (i + 1) * 20
+                };
+                aMapData.push(oDataItem);
+            }
+        }
+        return aMapData;
     },
 
     onAnswerInput(e) {
@@ -194,13 +217,12 @@ Page({
 
         var i, bFlag = false;
         for (i = 0; i < aAnswers.length; i++) {
-            if (aAnswers[i] === sAnswer) {
+            if (aAnswers[i] === sAnswer && that.getIsNotAnswered(sAnswer, aPlayers)) {
                 wx.showToast({
                     title: "回答正确！"
                 });
                 bFlag = true;
                 var iNextPlayerIndex = (iCurrentPlayerIndex === aPlayers.length - 1) ? 0 : iCurrentPlayerIndex + 1;
-                // console.log(iNextPlayerIndex);
                 that.setData({
                     userAnswer: "",
                     currentPlayerIndex: iNextPlayerIndex
@@ -219,6 +241,16 @@ Page({
                 title: "不对哦"
             });
         }
+    },
+
+    getIsNotAnswered(sAnswer, players) {
+        var i, bFlag = false;
+        for (i = 0; i < players.length; i++) {
+            if (players[i].answered && players[i].answered.includes(sAnswer)) {
+                bFlag = true;
+            }
+        }
+        return !bFlag;
     },
 
     switchPlayer(that) {
