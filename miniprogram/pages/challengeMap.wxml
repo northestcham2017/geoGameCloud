@@ -4,7 +4,6 @@
 
     <ec-canvas id="mychart-dom-area" canvas-id="mychart-area" ec="{{ ec }}"></ec-canvas>
 
-
     <view hidden="{{currentPlayerIndex === myIndex ? false : true}}">
         <text>国家名称：</text>
         <input value="{{userAnswer}}" placeholder="倒计时{{roundTimeLimit}}秒" class="answer__input" bindinput="onAnswerInput"></input>
